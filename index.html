@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Thailand Companion</title>
+  <meta name="description" content="Offline-Reisebegleiter für Thailand">
+  <meta name="theme-color" content="#0b6e63" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1b1a" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Thailand">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="page-title">Countdown</h1>
+    <div class="topbar-actions">
+      <span id="offline-badge" class="badge" hidden>Offline</span>
+      <button id="theme-btn" class="icon-btn" type="button" aria-label="Farbmodus wechseln" title="Farbmodus wechseln"></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Countdown -->
+    <section id="tab-countdown" class="tab" data-title="Countdown">
+      <div class="card hero">
+        <p class="hero-label" id="cd-label">Bis zum Abflug</p>
+        <div class="cd-grid" id="cd-grid">
+          <div class="cd-cell"><span class="cd-num" id="cd-days">–</span><span class="cd-unit">Tage</span></div>
+          <div class="cd-cell"><span class="cd-num" id="cd-hours">–</span><span class="cd-unit">Stunden</span></div>
+          <div class="cd-cell"><span class="cd-num" id="cd-mins">–</span><span class="cd-unit">Minuten</span></div>
+        </div>
+        <div class="trip-day" id="trip-day" hidden>
+          <span class="trip-day-big" id="trip-day-text"></span>
+          <div class="progress"><div class="progress-bar" id="trip-progress"></div></div>
+        </div>
+        <p class="hero-sub" id="cd-sub"></p>
+      </div>
+
+      <form class="card form" id="trip-form">
+        <h2>Reisedaten</h2>
+        <label>Abflug (Datum &amp; Uhrzeit)
+          <input type="datetime-local" id="trip-start" required>
+        </label>
+        <label>Rückflug (Datum &amp; Uhrzeit)
+          <input type="datetime-local" id="trip-end">
+        </label>
+        <button class="btn primary" type="submit">Speichern</button>
+        <p class="hint">Die Zeiten beziehen sich auf die Uhr deines Handys.</p>
+      </form>
+    </section>
+
+    <!-- 2. Packliste -->
+    <section id="tab-pack" class="tab" data-title="Packliste" hidden>
+      <div class="card">
+        <div class="progress-head">
+          <span id="pack-count">0 / 0 gepackt</span>
+          <span id="pack-percent">0 %</span>
+        </div>
+        <div class="progress big"><div class="progress-bar" id="pack-progress"></div></div>
+      </div>
+
+      <form class="card form row-form" id="pack-form">
+        <input type="text" id="pack-input" placeholder="Neuer Eintrag…" autocomplete="off" required aria-label="Neuer Eintrag">
+        <select id="pack-cat" aria-label="Kategorie"></select>
+        <button class="btn primary" type="submit" aria-label="Hinzufügen">＋</button>
+      </form>
+
+      <div id="pack-list"></div>
+
+      <div class="actions-row">
+        <button class="btn ghost" type="button" id="pack-uncheck">Alle Haken entfernen</button>
+        <button class="btn ghost danger" type="button" id="pack-reset">Liste zurücksetzen</button>
+      </div>
+    </section>
+
+    <!-- 3. Währungsrechner -->
+    <section id="tab-money" class="tab" data-title="Währung" hidden>
+      <div class="card">
+        <label class="money-field">
+          <span class="money-cur">🇪🇺 EUR</span>
+          <input type="text" inputmode="decimal" id="eur-input" placeholder="0" autocomplete="off" aria-label="Betrag in Euro">
+        </label>
+        <button class="swap-hint" type="button" id="money-clear" aria-label="Felder leeren">⇅ leeren</button>
+        <label class="money-field">
+          <span class="money-cur">🇹🇭 THB</span>
+          <input type="text" inputmode="decimal" id="thb-input" placeholder="0" autocomplete="off" aria-label="Betrag in Baht">
+        </label>
+        <div class="quick" id="quick-thb">
+          <button class="chip" type="button" data-thb="20">20 ฿</button>
+          <button class="chip" type="button" data-thb="100">100 ฿</button>
+          <button class="chip" type="button" data-thb="500">500 ฿</button>
+          <button class="chip" type="button" data-thb="1000">1000 ฿</button>
+        </div>
+        <div class="quick" id="quick-eur">
+          <button class="chip alt" type="button" data-eur="10">10 €</button>
+          <button class="chip alt" type="button" data-eur="50">50 €</button>
+          <button class="chip alt" type="button" data-eur="100">100 €</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Wechselkurs</h2>
+        <p class="rate-big">1 € = <strong id="rate-display">–</strong> ฿</p>
+        <p class="hint" id="rate-meta"></p>
+        <button class="btn" type="button" id="rate-refresh">Kurs online aktualisieren</button>
+        <form class="form row-form" id="rate-form">
+          <input type="text" inputmode="decimal" id="rate-input" placeholder="z. B. 38,50" aria-label="Kurs manuell (Baht pro Euro)" required>
+          <button class="btn primary" type="submit">Manuell setzen</button>
+        </form>
+        <p class="hint">Tipp: Wechselstuben in Thailand haben oft bessere Kurse als Bankautomaten (ATM-Gebühr meist 220 ฿).</p>
+      </div>
+    </section>
+
+    <!-- 4. Thai-Sprachhilfe -->
+    <section id="tab-phrases" class="tab" data-title="Thai" hidden>
+      <div class="card gender-card">
+        <span>Ich spreche als</span>
+        <div class="segmented" role="radiogroup" aria-label="Höflichkeitsform">
+          <button type="button" role="radio" data-gender="m">♂ Mann <small>khráp</small></button>
+          <button type="button" role="radio" data-gender="f">♀ Frau <small>khâ</small></button>
+        </div>
+      </div>
+      <div class="chips-scroll" id="phrase-cats" role="tablist"></div>
+      <p class="hint" id="tts-hint" hidden></p>
+      <div id="phrase-list"></div>
+    </section>
+
+    <!-- 5. Reiseplan -->
+    <section id="tab-plan" class="tab" data-title="Reiseplan" hidden>
+      <div id="plan-list"></div>
+      <button class="btn primary block" type="button" id="plan-add">＋ Station hinzufügen</button>
+    </section>
+
+    <!-- 6. Notfall -->
+    <section id="tab-sos" class="tab" data-title="Notfall" hidden>
+      <div class="card">
+        <h2>Notrufnummern Thailand</h2>
+        <div class="call-list">
+          <a class="call" href="tel:1155"><span class="call-num">1155</span><span class="call-name">Touristenpolizei<small>spricht Englisch, 24 h</small></span></a>
+          <a class="call" href="tel:191"><span class="call-num">191</span><span class="call-name">Polizei</span></a>
+          <a class="call" href="tel:1669"><span class="call-num">1669</span><span class="call-name">Rettung / Ambulanz</span></a>
+          <a class="call" href="tel:199"><span class="call-num">199</span><span class="call-name">Feuerwehr</span></a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Österreichische Botschaft Bangkok</h2>
+        <address>
+          Embassy of Austria<br>
+          14 Soi Nantha-Mozart (Soi Sathorn 1)<br>
+          South Sathorn Road, Thungmahamek<br>
+          Sathorn, Bangkok 10120
+        </address>
+        <div class="call-list">
+          <a class="call" href="tel:+6621056700"><span class="call-num small">+66 2 105 6700</span><span class="call-name">Botschaft Bangkok</span></a>
+          <a class="call" href="tel:+431901154411"><span class="call-num small">+43 1 90115 4411</span><span class="call-name">Außenministerium Wien<small>Notfall-Hotline, 24 h</small></span></a>
+        </div>
+        <p class="hint">E-Mail: <a href="mailto:bangkok-ob@bmeia.gv.at">bangkok-ob@bmeia.gv.at</a> · Parteienverkehr Mo–Fr vormittags, vorher anrufen.</p>
+        <a class="btn block" href="https://maps.google.com/?q=Austrian+Embassy+Bangkok+Soi+Nantha-Mozart" target="_blank" rel="noopener">In Karten öffnen</a>
+      </div>
+
+      <form class="card form" id="ins-form">
+        <h2>Reiseversicherung</h2>
+        <label>Versicherung
+          <input type="text" id="ins-name" placeholder="z. B. Europäische Reiseversicherung" autocomplete="off">
+        </label>
+        <label>Polizzen-/Versicherungsnummer
+          <input type="text" id="ins-number" autocomplete="off">
+        </label>
+        <label>Notfall-Hotline
+          <input type="tel" id="ins-phone" placeholder="+43 …" autocomplete="off">
+        </label>
+        <button class="btn primary" type="submit">Speichern</button>
+        <a class="call" id="ins-call" href="#" hidden><span class="call-num small" id="ins-call-num"></span><span class="call-name">Versicherung anrufen</span></a>
+      </form>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Hauptnavigation">
+    <button type="button" data-tab="countdown" aria-label="Countdown"><span class="ico">⏳</span><span>Countdown</span></button>
+    <button type="button" data-tab="pack" aria-label="Packliste"><span class="ico">🎒</span><span>Packen</span></button>
+    <button type="button" data-tab="money" aria-label="Währungsrechner"><span class="ico">฿</span><span>Währung</span></button>
+    <button type="button" data-tab="phrases" aria-label="Thai-Sprachhilfe"><span class="ico">ก</span><span>Thai</span></button>
+    <button type="button" data-tab="plan" aria-label="Reiseplan"><span class="ico">🗺️</span><span>Plan</span></button>
+    <button type="button" data-tab="sos" aria-label="Notfall" class="sos"><span class="ico">🆘</span><span>Notfall</span></button>
+  </nav>
+
+  <dialog id="plan-dialog">
+    <form method="dialog" class="form" id="plan-form">
+      <h2 id="plan-dialog-title">Station</h2>
+      <label>Ort
+        <input type="text" id="plan-place" required autocomplete="off" placeholder="z. B. Chiang Mai">
+      </label>
+      <div class="two-col">
+        <label>Von
+          <input type="date" id="plan-from" required>
+        </label>
+        <label>Bis
+          <input type="date" id="plan-to">
+        </label>
+      </div>
+      <label>Unterkunft
+        <input type="text" id="plan-stay" autocomplete="off" placeholder="Hotel, Adresse…">
+      </label>
+      <label>Notizen
+        <textarea id="plan-notes" rows="4" placeholder="Buchungsnummer, Ausflüge, Transfer…"></textarea>
+      </label>
+      <div class="actions-row">
+        <button class="btn ghost" type="button" id="plan-cancel">Abbrechen</button>
+        <button class="btn primary" type="submit" value="save">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
