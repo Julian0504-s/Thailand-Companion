@@ -5,8 +5,9 @@ Offline-fähige Progressive Web App für die Thailand-Reise – reines HTML, CSS
 **Live:** https://julian0504-s.github.io/Thailand-Companion/
 
 ## Funktionen
-- **Countdown** bis zum Abflug, während der Reise „Tag X von Y“
+- **Countdown** bis zum Abflug, während der Reise „Tag X von Y“; Uhrzeit Bangkok/Wien inkl. Sommerzeit
 - **Packliste** mit Kategorien, Abhaken, Hinzufügen/Löschen, Fortschrittsbalken
+- **Reisekasse**: Ausgaben in THB/EUR mit Kategorien, Tagesbudget, Auswertung, Aufteilung „wer schuldet wem“ und CSV-Export
 - **Währungsrechner** EUR ↔ THB (Kurs online via EZB/Frankfurter bzw. open.er-api.com, offline zuletzt gespeicherter Kurs, manuell setzbar)
 - **Thai-Sprachhilfe** mit Thai-Schrift, Lautschrift, khráp/khâ-Form, Vorlesen (Web Speech API, th-TH) und Favoriten
 - **Reiseplan** als Zeitleiste: Flüge (inkl. Inland), Unterkünfte, Transport (Bus, Zug, Fähre …) und Aktivitäten

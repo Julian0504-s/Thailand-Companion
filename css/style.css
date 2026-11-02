@@ -397,3 +397,60 @@ dialog::backdrop { background: rgba(0, 0, 0, .5); }
 .link-main small { color: var(--muted); }
 label.btn { display: inline-flex; flex-direction: row; font-size: 1rem; }
 .actions-row .btn { white-space: nowrap; padding: 0 10px; }
+
+/* ---------- Uhrzeit ---------- */
+.clocks { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 14px 16px; }
+.clock { display: flex; flex-direction: column; align-items: center; }
+.clock-place { font-weight: 700; font-size: .9rem; color: var(--muted); }
+.clock-time { font-size: 2rem; font-weight: 850; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.clock-date { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.clock-diff { background: var(--accent-soft); color: var(--text); border-radius: 99px; padding: 4px 10px; font-weight: 800; font-size: .9rem; }
+
+/* ---------- Reisekasse ---------- */
+.money-switch { background: var(--surface); border: 1px solid var(--border); }
+.segmented button[aria-selected="true"] { background: var(--primary); color: var(--primary-ink); }
+.amount-row { display: flex; gap: 8px; align-items: stretch; }
+.amount-row input { font-size: 2rem; font-weight: 800; text-align: right; min-height: 64px; flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+.cur-switch { flex: 0 0 auto; grid-template-columns: 1fr 1fr; }
+.cur-switch button { min-width: 48px; font-size: 1.3rem; }
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.cat-btn {
+  min-height: 64px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: .78rem; font-weight: 700; cursor: pointer; padding: 4px; line-height: 1.15; text-align: center;
+}
+.cat-btn span { font-size: 1.4rem; }
+.cat-btn[aria-checked="true"] { border-color: var(--primary); background: var(--accent-soft); }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { display: flex; flex-direction: column; background: var(--surface-2); border-radius: 12px; padding: 10px; min-width: 0; }
+.stat small { color: var(--muted); font-weight: 700; font-size: .78rem; }
+.stat b { font-size: 1.25rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .85rem; font-weight: 600; }
+.budget { margin-top: 14px; }
+.budget .over { color: var(--danger); }
+.progress-bar.over-bar { background: var(--danger); }
+.cat-bars { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.cat-bar { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-weight: 600; font-size: .92rem; }
+.cat-bar .progress { grid-column: 1 / -1; height: 8px; }
+.cat-bar-val { font-variant-numeric: tabular-nums; }
+.settle { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+.settle:first-of-type { border-top: 0; }
+.settle > div { flex: 1; display: flex; flex-direction: column; }
+.settle span { color: var(--muted); font-weight: 600; }
+.settle .btn { flex: 0 0 auto; }
+#cash-list { display: flex; flex-direction: column; gap: 12px; }
+.exp-day { padding: 0; overflow: hidden; }
+.exp-day-head { display: flex; justify-content: space-between; padding: 12px 16px; font-weight: 800; background: var(--surface-2); }
+.exp-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  min-height: 60px; padding: 8px 16px; border: 0; border-top: 1px solid var(--border); background: none; cursor: pointer;
+}
+.exp-icon { font-size: 1.4rem; }
+.exp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.exp-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-text small, .exp-amount small { color: var(--muted); font-weight: 600; }
+.exp-amount { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.settings summary { font-weight: 800; cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.person-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.person-row input { flex: 1; }
+@media (max-width: 360px) { .clock-time { font-size: 1.7rem; } .stat b { font-size: 1.05rem; } }

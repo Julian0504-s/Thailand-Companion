@@ -1,14 +1,15 @@
 // Service Worker: cached die App-Shell, damit alles offline läuft.
-const CACHE = 'thailand-companion-v3';
+const CACHE = 'thailand-companion-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css?v=3',
-  './js/data.js?v=3',
-  './js/app.js?v=3',
-  './js/plan.js?v=3',
-  './js/links.js?v=3',
+  './css/style.css?v=4',
+  './js/data.js?v=4',
+  './js/app.js?v=4',
+  './js/plan.js?v=4',
+  './js/links.js?v=4',
+  './js/cash.js?v=4',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

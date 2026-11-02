@@ -56,7 +56,7 @@
   const fmt = (n, digits = 2) => n.toLocaleString('de-AT', { minimumFractionDigits: 0, maximumFractionDigits: digits });
 
   // Für js/plan.js und js/links.js
-  window.TC = { $, $$, h, store, uid, toast: (m) => toast(m) };
+  window.TC = { $, $$, h, store, uid, fmt, parseNum, toast: (m) => toast(m) };
 
   // ---------- Farbmodus ----------
   const THEMES = ['auto', 'light', 'dark'];
@@ -161,9 +161,29 @@
     renderCountdown();
     toast('Reisedaten gespeichert');
   });
-  renderCountdown();
-  setInterval(renderCountdown, 15000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderCountdown(); });
+  // Uhrzeit Bangkok / Wien (Sommerzeit wird über die Zeitzonen-Datenbank berücksichtigt)
+  function zoneParts(tz, d) {
+    const parts = new Intl.DateTimeFormat('de-AT', { timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', day: 'numeric', month: 'short', hour12: false })
+      .formatToParts(d).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+    return { time: `${parts.hour}:${parts.minute}`, date: `${parts.weekday} ${parts.day}. ${parts.month}` };
+  }
+  function zoneOffsetMin(tz, d) {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })
+      .formatToParts(d).reduce((o, x) => { o[x.type] = Number(x.value); return o; }, {});
+    return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(d.getTime() / 60000) * 60000) / 60000;
+  }
+  function renderClocks() {
+    const now = new Date();
+    const th = zoneParts('Asia/Bangkok', now), at = zoneParts('Europe/Vienna', now);
+    $('#clock-th').textContent = th.time; $('#clock-th-date').textContent = th.date;
+    $('#clock-at').textContent = at.time; $('#clock-at-date').textContent = at.date;
+    const diff = (zoneOffsetMin('Asia/Bangkok', now) - zoneOffsetMin('Europe/Vienna', now)) / 60;
+    $('#clock-diff').textContent = `+${fmt(diff, 1)} h`;
+  }
+
+  renderCountdown(); renderClocks();
+  setInterval(() => { renderCountdown(); renderClocks(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderCountdown(); renderClocks(); } });
 
   // ---------- 2. Packliste ----------
   function defaultPack() {
@@ -259,6 +279,7 @@
   let lastEdited = 'thb';
   const eurIn = $('#eur-input'), thbIn = $('#thb-input');
   const currentRate = () => (rate && rate.value) || FALLBACK_RATE;
+  window.TC.rate = currentRate;
 
   function renderRate() {
     $('#rate-display').textContent = fmt(currentRate(), 4);
@@ -292,6 +313,7 @@
     rate = { value, updated: Date.now(), source };
     store.set('rate', rate);
     renderRate(); convert();
+    document.dispatchEvent(new CustomEvent('tc:rate'));
   }
 
   async function fetchJson(url) {
@@ -389,9 +411,9 @@
   }
 
   function renderGender() {
-    for (const b of $$('.segmented button')) b.setAttribute('aria-checked', String(b.dataset.gender === gender));
+    for (const b of $$('[data-gender]')) b.setAttribute('aria-checked', String(b.dataset.gender === gender));
   }
-  for (const b of $$('.segmented button')) {
+  for (const b of $$('[data-gender]')) {
     b.addEventListener('click', () => { gender = b.dataset.gender; store.set('gender', gender); renderGender(); renderPhrases(); });
   }
 

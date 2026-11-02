@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
   <header class="topbar">
@@ -39,6 +39,12 @@
           <div class="progress"><div class="progress-bar" id="trip-progress"></div></div>
         </div>
         <p class="hero-sub" id="cd-sub"></p>
+      </div>
+
+      <div class="card clocks" aria-label="Uhrzeit">
+        <div class="clock"><span class="clock-place">🇹🇭 Bangkok</span><span class="clock-time" id="clock-th">–</span><span class="clock-date" id="clock-th-date"></span></div>
+        <div class="clock-diff" id="clock-diff"></div>
+        <div class="clock"><span class="clock-place">🇦🇹 Wien</span><span class="clock-time" id="clock-at">–</span><span class="clock-date" id="clock-at-date"></span></div>
       </div>
 
       <div id="next-up"></div>
@@ -81,7 +87,13 @@
     </section>
 
     <!-- 3. Währungsrechner -->
-    <section id="tab-money" class="tab" data-title="Währung" hidden>
+    <section id="tab-money" class="tab" data-title="Geld" hidden>
+      <div class="segmented money-switch" role="tablist" aria-label="Ansicht">
+        <button type="button" role="tab" data-money-view="calc">💱 Rechner</button>
+        <button type="button" role="tab" data-money-view="cash">👛 Reisekasse</button>
+      </div>
+
+      <div id="money-calc" class="tab">
       <div class="card">
         <label class="money-field">
           <span class="money-cur">🇪🇺 EUR</span>
@@ -115,6 +127,61 @@
           <button class="btn primary" type="submit">Manuell setzen</button>
         </form>
         <p class="hint">Tipp: Wechselstuben in Thailand haben oft bessere Kurse als Bankautomaten (ATM-Gebühr meist 220 ฿).</p>
+      </div>
+      </div>
+
+      <div id="money-cash" class="tab" hidden>
+        <div id="cash-summary"></div>
+
+        <form class="card form" id="cash-form">
+          <h2 id="cash-form-title">Neue Ausgabe</h2>
+          <div class="amount-row">
+            <input type="text" inputmode="decimal" id="cash-amount" placeholder="0" autocomplete="off" required aria-label="Betrag">
+            <div class="segmented cur-switch" role="radiogroup" aria-label="Währung">
+              <button type="button" role="radio" data-cur="THB">฿</button>
+              <button type="button" role="radio" data-cur="EUR">€</button>
+            </div>
+          </div>
+          <p class="hint" id="cash-convert" style="margin:0"></p>
+          <div class="cat-grid" id="cash-cats" role="radiogroup" aria-label="Kategorie"></div>
+          <label>Beschreibung
+            <input type="text" id="cash-desc" autocomplete="off" placeholder="z. B. Pad Thai am Nachtmarkt">
+          </label>
+          <div class="two-col">
+            <label>Datum
+              <input type="date" id="cash-date" required>
+            </label>
+            <label class="persons-only">Bezahlt von
+              <select id="cash-payer"></select>
+            </label>
+          </div>
+          <label class="persons-only">Für wen?
+            <select id="cash-split"></select>
+          </label>
+          <button class="btn primary" type="submit" id="cash-submit">Ausgabe speichern</button>
+          <div class="actions-row" id="cash-edit-actions" hidden>
+            <button class="btn ghost" type="button" id="cash-cancel">Abbrechen</button>
+            <button class="btn ghost danger" type="button" id="cash-delete">🗑 Löschen</button>
+          </div>
+        </form>
+
+        <div id="cash-balance"></div>
+        <div id="cash-list"></div>
+
+        <details class="card settings">
+          <summary>⚙️ Reisende &amp; Budget</summary>
+          <div class="form" style="margin-top:12px">
+            <div id="cash-persons"></div>
+            <form class="row-form form" id="person-form">
+              <input type="text" id="person-name" placeholder="Name hinzufügen" autocomplete="off" required aria-label="Name">
+              <button class="btn" type="submit">＋</button>
+            </form>
+            <label>Tagesbudget gesamt (฿, optional)
+              <input type="text" inputmode="decimal" id="cash-budget" placeholder="z. B. 3000" autocomplete="off">
+            </label>
+            <button class="btn" type="button" id="cash-csv">⬇ Ausgaben als CSV (Excel)</button>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -261,9 +328,10 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/data.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
-  <script src="js/plan.js?v=3"></script>
-  <script src="js/links.js?v=3"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+  <script src="js/plan.js?v=4"></script>
+  <script src="js/links.js?v=4"></script>
+  <script src="js/cash.js?v=4"></script>
 </body>
 </html>
