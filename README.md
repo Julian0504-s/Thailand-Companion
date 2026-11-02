@@ -9,7 +9,11 @@ Offline-fähige Progressive Web App für die Thailand-Reise – reines HTML, CSS
 - **Packliste** mit Kategorien, Abhaken, Hinzufügen/Löschen, Fortschrittsbalken
 - **Währungsrechner** EUR ↔ THB (Kurs online via EZB/Frankfurter bzw. open.er-api.com, offline zuletzt gespeicherter Kurs, manuell setzbar)
 - **Thai-Sprachhilfe** mit Thai-Schrift, Lautschrift, khráp/khâ-Form, Vorlesen (Web Speech API, th-TH) und Favoriten
-- **Reiseplan** mit Stationen (Ort, Datum, Unterkunft, Notizen)
+- **Reiseplan** als Zeitleiste: Flüge (inkl. Inland), Unterkünfte, Transport (Bus, Zug, Fähre …) und Aktivitäten
+  - **Bordkarte scannen** per Kamera oder Screenshot (IATA-BCBP-Barcode, `BarcodeDetector`-API – Chrome auf Android)
+  - Flugstatus-Link (Flightradar24), Buchungscodes zum Kopieren, Karten-Links, „Fahrer zeigen“-Vollbild mit Hoteladresse
+  - „Als Nächstes“ auf der Startseite
+- **Links**: nützliche Seiten (TDAC, 12Go, Grab, Bahn, Fähren, Airlines, Flughäfen …), eigene Links, Datensicherung als JSON
 - **Notfall**: Thai-Notrufnummern, Österreichische Botschaft Bangkok, Reiseversicherung
 
 Alle Daten bleiben lokal im Browser (`localStorage`).

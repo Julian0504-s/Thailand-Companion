@@ -55,6 +55,9 @@
   };
   const fmt = (n, digits = 2) => n.toLocaleString('de-AT', { minimumFractionDigits: 0, maximumFractionDigits: digits });
 
+  // Für js/plan.js und js/links.js
+  window.TC = { $, $$, h, store, uid, toast: (m) => toast(m) };
+
   // ---------- Farbmodus ----------
   const THEMES = ['auto', 'light', 'dark'];
   const THEME_ICONS = { auto: '🌓', light: '☀️', dark: '🌙' };
@@ -74,7 +77,7 @@
   });
 
   // ---------- Tabs ----------
-  const TABS = ['countdown', 'pack', 'money', 'phrases', 'plan', 'sos'];
+  const TABS = ['countdown', 'plan', 'pack', 'money', 'phrases', 'links', 'sos'];
   function showTab(name) {
     if (!TABS.includes(name)) name = 'countdown';
     for (const t of TABS) $('#tab-' + t).hidden = t !== name;
@@ -447,80 +450,7 @@
   }
   renderGender(); renderPhraseCats(); renderPhrases();
 
-  // ---------- 5. Reiseplan ----------
-  let plan = store.get('plan', []);
-  let editingId = null;
-  const dlg = $('#plan-dialog');
-  const fmtDate = (s) => new Date(s + 'T00:00').toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' });
-
-  function renderPlan() {
-    plan.sort((a, b) => a.from.localeCompare(b.from));
-    const list = $('#plan-list');
-    if (!plan.length) {
-      list.replaceChildren(h('div', { class: 'card empty' },
-        h('span', { class: 'big', text: '🗺️' }),
-        'Noch keine Stationen. Füge deine erste Station hinzu.'));
-      return;
-    }
-    const d = new Date();
-    const todayLocal = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    list.replaceChildren(...plan.map((s) => {
-      const to = s.to || s.from;
-      const state = todayLocal > to ? 'past' : (todayLocal >= s.from ? 'now' : '');
-      const nights = s.to ? Math.round((new Date(s.to) - new Date(s.from)) / 86400000) : 0;
-      let dateText = fmtDate(s.from) + (s.to && s.to !== s.from ? ' – ' + fmtDate(s.to) : '');
-      if (nights > 0) dateText += ` · ${nights} ${nights === 1 ? 'Nacht' : 'Nächte'}`;
-      if (state === 'now') dateText = '● Jetzt · ' + dateText;
-      return h('div', { class: 'card stop ' + state },
-        h('div', { class: 'stop-date', text: dateText }),
-        h('div', { class: 'stop-place', text: s.place }),
-        s.stay ? h('div', { class: 'stop-stay', text: '🏨 ' + s.stay }) : null,
-        s.notes ? h('div', { class: 'stop-notes', text: s.notes }) : null,
-        h('div', { class: 'stop-actions' },
-          h('button', { class: 'btn', type: 'button', onclick: () => openPlan(s) }, '✎ Bearbeiten'),
-          h('button', {
-            class: 'btn ghost danger', type: 'button',
-            onclick: () => {
-              if (!confirm(`„${s.place}“ löschen?`)) return;
-              plan = plan.filter((x) => x.id !== s.id); store.set('plan', plan); renderPlan();
-            }
-          }, '🗑 Löschen')
-        )
-      );
-    }));
-  }
-
-  function openPlan(stop) {
-    editingId = stop ? stop.id : null;
-    $('#plan-dialog-title').textContent = stop ? 'Station bearbeiten' : 'Neue Station';
-    $('#plan-place').value = stop ? stop.place : '';
-    $('#plan-from').value = stop ? stop.from : (plan.length ? (plan[plan.length - 1].to || plan[plan.length - 1].from) : (trip.start || '').slice(0, 10));
-    $('#plan-to').value = stop ? (stop.to || '') : '';
-    $('#plan-stay').value = stop ? (stop.stay || '') : '';
-    $('#plan-notes').value = stop ? (stop.notes || '') : '';
-    dlg.showModal();
-  }
-  $('#plan-add').addEventListener('click', () => openPlan(null));
-  $('#plan-cancel').addEventListener('click', () => dlg.close());
-  $('#plan-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = {
-      place: $('#plan-place').value.trim(),
-      from: $('#plan-from').value,
-      to: $('#plan-to').value,
-      stay: $('#plan-stay').value.trim(),
-      notes: $('#plan-notes').value.trim()
-    };
-    if (!data.place || !data.from) return;
-    if (data.to && data.to < data.from) { toast('„Bis“ liegt vor „Von“'); return; }
-    if (editingId) Object.assign(plan.find((x) => x.id === editingId), data);
-    else plan.push({ id: uid(), ...data });
-    store.set('plan', plan);
-    renderPlan();
-    dlg.close();
-    toast('Station gespeichert');
-  });
-  renderPlan();
+  // ---------- 5. Reiseplan: siehe js/plan.js ----------
 
   // ---------- 6. Notfall ----------
   const ins = store.get('insurance', { name: '', number: '', phone: '' });
