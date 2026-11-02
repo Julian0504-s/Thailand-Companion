@@ -28,4 +28,4 @@ python3 -m http.server 8000
 Jeder Push auf `main` (bzw. den Entwicklungs-Branch) deployt über `.github/workflows/pages.yml` auf GitHub Pages.
 Einmalig nötig: *Settings → Pages → Source: GitHub Actions*.
 
-Bei Änderungen an Dateien die Cache-Version in `sw.js` (`CACHE`) erhöhen, damit installierte Apps die neue Version laden.
+Bei Änderungen die Cache-Version in `sw.js` (`CACHE`) und die `?v=`-Parameter in `index.html` und `sw.js` erhöhen.

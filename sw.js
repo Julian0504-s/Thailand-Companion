@@ -1,14 +1,14 @@
 // Service Worker: cached die App-Shell, damit alles offline läuft.
-const CACHE = 'thailand-companion-v2';
+const CACHE = 'thailand-companion-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css',
-  './js/data.js',
-  './js/app.js',
-  './js/plan.js',
-  './js/links.js',
+  './css/style.css?v=3',
+  './js/data.js?v=3',
+  './js/app.js?v=3',
+  './js/plan.js?v=3',
+  './js/links.js?v=3',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
@@ -47,17 +47,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache first, im Hintergrund aktualisieren.
+  // Netzwerk zuerst (immer aktuell), offline aus dem Cache.
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req).then((res) => {
+    fetch(req)
+      .then((res) => {
         if (res && res.ok) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }
         return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(req))
   );
 });
