@@ -44,7 +44,8 @@
     hotel: [
       { k: 'name', label: 'Name der Unterkunft', req: true },
       { k: 'city', label: 'Ort', ph: 'z. B. Krabi' },
-      { row: [{ k: 'date', label: 'Check-in', type: 'date', req: true }, { k: 'endDate', label: 'Check-out', type: 'date' }] },
+      { row: [{ k: 'date', label: 'Check-in', type: 'date', req: true }, { k: 'checkinTime', label: 'Check-in ab', type: 'time' }] },
+      { row: [{ k: 'endDate', label: 'Check-out', type: 'date' }, { k: 'checkoutTime', label: 'Check-out bis', type: 'time' }] },
       { k: 'address', label: 'Adresse (gern auch auf Thai – zum Zeigen für Fahrer)', type: 'textarea', rows: 2 },
       { k: 'phone', label: 'Telefon', type: 'tel' },
       { k: 'ref', label: 'Buchungsnummer' },
@@ -87,7 +88,7 @@
   const todayISO = () => localISO(new Date());
   const fmtDay = (iso, opts) => new Date(iso + 'T00:00').toLocaleDateString('de-AT', opts || { weekday: 'short', day: 'numeric', month: 'short' });
   const nightsOf = (b) => (b.endDate ? Math.round((new Date(b.endDate + 'T00:00') - new Date(b.date + 'T00:00')) / 86400000) : 0);
-  const startTime = (b) => b.depTime || b.time || (b.type === 'hotel' ? '14:00' : '');
+  const startTime = (b) => b.depTime || b.time || (b.type === 'hotel' ? (b.checkinTime || '14:00') : '');
   const sortKey = (b) => b.date + 'T' + (startTime(b) || '12:00');
   const endDateOf = (b) => (b.type === 'hotel' && b.endDate) ? b.endDate : b.date;
   const isPast = (b) => endDateOf(b) < todayISO();
@@ -107,6 +108,7 @@
   // ---------- Darstellung ----------
   let filter = store.get('planFilter', 'all');
   let showPast = false;
+  let planView = store.get('planView', 'timeline');
 
   function copyChip(label, value) {
     if (!value) return null;
@@ -144,7 +146,8 @@
       const n = nightsOf(b);
       meta.push(b.city);
       main = h('div', { class: 'card-title', text: b.name });
-      sub.push(`Check-in ${fmtDay(b.date)}${b.endDate ? ' → Check-out ' + fmtDay(b.endDate) : ''}${n ? ` · ${n} ${n === 1 ? 'Nacht' : 'Nächte'}` : ''}`);
+      sub.push(`Check-in ${fmtDay(b.date)}${b.checkinTime ? ' ab ' + b.checkinTime : ''}`);
+      if (b.endDate) sub.push(`Check-out ${fmtDay(b.endDate)}${b.checkoutTime ? ' bis ' + b.checkoutTime : ''}${n ? ` · ${n} ${n === 1 ? 'Nacht' : 'Nächte'}` : ''}`);
       if (b.address) sub.push('📍 ' + b.address);
       chips = [copyChip('Buchung', b.ref)];
       actions.push(linkBtn('🗺 Karte', mapsUrl(b.address || [b.name, b.city].filter(Boolean).join(', '))));
@@ -176,18 +179,32 @@
         h('button', { class: 'mini-btn', type: 'button', 'aria-label': 'Bearbeiten', onclick: () => openForm(b.type, b) }, '✎'),
         h('button', {
           class: 'mini-btn', type: 'button', 'aria-label': 'Löschen',
-          onclick: () => {
-            if (!confirm(`„${titleOf(b)}“ löschen?`)) return;
-            bookings = bookings.filter((x) => x.id !== b.id); save(); render();
-          }
+          onclick: () => deleteBooking(b)
         }, '🗑')
       ),
       main,
       sub.map((t) => h('div', { class: 'booking-sub', text: t })),
       chips.some(Boolean) ? h('div', { class: 'chip-row' }, chips) : null,
       b.notes ? h('div', { class: 'stop-notes', text: b.notes }) : null,
-      actions.length ? h('div', { class: 'booking-actions' }, actions) : null
+      fileRow(b),
+      h('div', { class: 'booking-actions' }, actions,
+        h('button', { class: 'btn small', type: 'button', onclick: () => window.TC.calendar.openFor(b) }, '📅 Kalender'))
     );
+  }
+
+  function fileRow(b) {
+    if (!b.files || !b.files.length) return null;
+    const F = window.TC.files;
+    return h('div', { class: 'file-row' }, b.files.map((f) => h('button', {
+      class: 'file-chip', type: 'button', onclick: () => F.view(f)
+    }, h('span', { text: F.iconFor(f) }), h('span', { class: 'file-chip-name', text: f.name }))));
+  }
+
+  function deleteBooking(b) {
+    const n = (b.files || []).length;
+    if (!confirm(`„${titleOf(b)}“ löschen?${n ? `\n${n} angehängte Datei${n > 1 ? 'en werden' : ' wird'} mitgelöscht.` : ''}`)) return;
+    for (const f of b.files || []) window.TC.files.remove(f.id).catch(() => {});
+    bookings = bookings.filter((x) => x.id !== b.id); save(); render();
   }
 
   function renderFilter() {
@@ -231,6 +248,7 @@
       list.replaceChildren(...out);
     }
     renderNextUp();
+    if (planView === 'hotels') renderHotels();
   }
 
   // "Als Nächstes" auf der Startseite
@@ -256,6 +274,49 @@
   // ---------- Formular ----------
   const dlg = $('#booking-dialog');
   let editing = null; // { type, id }
+  let formFiles = { existing: [], removed: new Set(), pending: [] };
+
+  function renderFormFiles() {
+    const F = window.TC.files;
+    const items = [
+      ...formFiles.existing.filter((f) => !formFiles.removed.has(f.id)).map((f) => ({ name: f.name, size: f.size, file: f, remove: () => formFiles.removed.add(f.id), open: () => F.view(f) })),
+      ...formFiles.pending.map((f) => ({ name: f.name, size: f.size, file: f, remove: () => { formFiles.pending = formFiles.pending.filter((x) => x !== f); }, pending: true }))
+    ];
+    $('#booking-files').replaceChildren(
+      h('div', { class: 'files-head' }, h('b', { text: '📎 Dateien' }), h('small', { text: 'PDFs oder Bilder – offline gespeichert' })),
+      ...items.map((it) => h('div', { class: 'file-item' },
+        h('span', { text: F.iconFor(it.file) }),
+        it.open
+          ? h('button', { class: 'file-item-name', type: 'button', onclick: it.open }, it.name)
+          : h('span', { class: 'file-item-name', text: it.name + ' (neu)' }),
+        h('small', { text: F.sizeText(it.size || 0) }),
+        h('button', { class: 'del-btn', type: 'button', 'aria-label': it.name + ' entfernen', onclick: () => { it.remove(); renderFormFiles(); } }, '✕')
+      )),
+      h('label', { class: 'btn small block', for: 'booking-file-input' }, '＋ Datei anhängen')
+    );
+  }
+  $('#booking-file-input').addEventListener('change', (e) => {
+    formFiles.pending.push(...e.target.files);
+    e.target.value = '';
+    renderFormFiles();
+  });
+
+  // Speichert neue Dateien, entfernt gelöschte und gibt die Metadaten-Liste zurück.
+  async function commitFiles() {
+    const F = window.TC.files;
+    for (const id of formFiles.removed) await F.remove(id).catch(() => {});
+    const kept = formFiles.existing.filter((f) => !formFiles.removed.has(f.id));
+    for (const f of formFiles.pending) kept.push(await F.put(f));
+    return kept;
+  }
+
+  // Beim Import: passende bestehende Unterkunft finden (gleiches Datum und Name/Buchungsnummer)
+  function findSameHotel(d) {
+    const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9ก-๙]+/g, '');
+    return bookings.find((b) => b.type === 'hotel' && b.date === d.date && (
+      (d.ref && b.ref && norm(b.ref) === norm(d.ref)) ||
+      (d.name && b.name && (norm(b.name).includes(norm(d.name)) || norm(d.name).includes(norm(b.name))))));
+  }
 
   function fieldEl(f, data) {
     const id = 'bf-' + f.k;
@@ -268,9 +329,19 @@
     return h('label', {}, f.label + (f.req ? ' *' : ''), input);
   }
 
-  function openForm(type, data) {
+  function openForm(type, data, files, isImport) {
+    if (isImport && type === 'hotel' && data) {
+      const same = findSameHotel(data);
+      if (same) {
+        const merged = { ...same };
+        for (const [k, v] of Object.entries(data)) if (v && !merged[k]) merged[k] = v;
+        data = merged;
+        toast('Bestehende Unterkunft wird ergänzt');
+      }
+    }
     editing = { type, id: data && data.id };
-    $('#booking-title').textContent = (data && data.id ? 'Bearbeiten: ' : 'Neu: ') + TYPES[type].label;
+    formFiles = { existing: (data && data.files) || [], removed: new Set(), pending: [...(files || [])] };
+    $('#booking-title').textContent = (data && data.id ? 'Bearbeiten: ' : isImport ? 'Import prüfen: ' : 'Neu: ') + TYPES[type].label;
     const d = { ...(data || {}) };
     if (!d.date) {
       const trip = store.get('trip', {});
@@ -280,12 +351,13 @@
     $('#booking-fields').replaceChildren(...FIELDS[type].map((f) => (f.row
       ? h('div', { class: 'two-col' }, f.row.map((x) => fieldEl(x, d)))
       : fieldEl(f, d))));
+    renderFormFiles();
     dlg.showModal();
   }
 
   const allFields = (type) => FIELDS[type].flatMap((f) => f.row || [f]);
 
-  $('#booking-form').addEventListener('submit', (e) => {
+  $('#booking-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const { type, id } = editing;
     const data = { type };
@@ -299,6 +371,16 @@
       data.flightNo = data.flightNo.replace(/^([A-Z0-9]{2})\s*0*(\d)/, '$1 $2');
       if (!data.airline) data.airline = AIRLINES[data.flightNo.slice(0, 2)] || '';
     }
+    const btn = $('#booking-form button[type=submit]');
+    btn.disabled = true;
+    try {
+      data.files = await commitFiles();
+    } catch (err) {
+      toast('Datei konnte nicht gespeichert werden');
+      btn.disabled = false;
+      return;
+    }
+    btn.disabled = false;
     if (id) Object.assign(bookings.find((b) => b.id === id), data);
     else bookings.push({ id: uid(), ...data });
     save(); render(); dlg.close();
@@ -355,19 +437,23 @@
     return legs.length ? legs : null;
   }
 
-  function addScannedLegs(legs) {
+  async function addScannedLegs(legs, files) {
     let added = 0, updated = 0;
     for (const leg of legs) {
       const existing = bookings.find((b) => b.type === 'flight' && flightKey(b.flightNo) === flightKey(leg.flightNo)
-        && b.date === leg.date && (!b.passenger || b.passenger === leg.passenger));
+        && b.date === leg.date && (!b.passenger || !leg.passenger || b.passenger === leg.passenger));
+      const metas = [];
+      for (const f of files || []) metas.push(await window.TC.files.put(f));
       if (existing) {
-        for (const k of ['pnr', 'seat', 'passenger', 'from', 'to', 'airline']) if (leg[k]) existing[k] = leg[k];
+        for (const k of ['pnr', 'seat', 'passenger', 'from', 'to', 'airline', 'depTime', 'arrTime']) if (leg[k]) existing[k] = leg[k];
+        existing.files = [...(existing.files || []), ...metas];
         updated++;
-      } else { bookings.push({ id: uid(), ...leg }); added++; }
+      } else { bookings.push({ id: uid(), ...leg, files: metas }); added++; }
     }
     save(); render();
     const last = bookings.find((b) => b.type === 'flight' && flightKey(b.flightNo) === flightKey(legs[0].flightNo) && b.date === legs[0].date);
-    toast(added ? `${added} Flug${added > 1 ? 'e' : ''} hinzugefügt – Uhrzeiten ergänzen` : `${updated} Flug aktualisiert`);
+    const missingTimes = legs.some((l) => !l.depTime);
+    toast(added ? `${added} ${added > 1 ? 'Flüge' : 'Flug'} hinzugefügt${missingTimes ? ' – Uhrzeiten ergänzen' : ''}` : `${updated} Flug aktualisiert`);
     if (legs.length === 1 && last) openForm('flight', last);
   }
 
@@ -444,9 +530,97 @@
   $('#scan-cancel').addEventListener('click', () => { stopCamera(); scanDlg.close(); });
   scanDlg.addEventListener('close', stopCamera);
 
-  // Für Tests und Datensicherung
+  // ---------- Übersicht Unterkünfte ----------
+  const addDaysISO = (iso, n) => localISO(new Date(new Date(iso + 'T12:00').getTime() + n * 86400000));
+  const nightsText = (n) => `${n} ${n === 1 ? 'Nacht' : 'Nächte'}`;
+
+  function renderHotels() {
+    const box = $('#hotel-overview');
+    const hotels = bookings.filter((b) => b.type === 'hotel').sort((a, b) => a.date.localeCompare(b.date));
+    if (!hotels.length) {
+      box.replaceChildren(h('div', { class: 'card empty' }, h('span', { class: 'big', text: '🏨' }),
+        'Noch keine Unterkünfte. Importiere eine Buchungsbestätigung oder lege eine an.'));
+      return;
+    }
+    const total = hotels.reduce((a, b) => a + nightsOf(b), 0);
+    const last = hotels.reduce((m, b) => (endDateOf(b) > m ? endDateOf(b) : m), hotels[0].date);
+    // Nächte mit Nachtflug gelten nicht als Lücke
+    const overnight = new Set(bookings.filter((b) => b.type === 'flight' && b.depTime && b.arrTime && b.arrTime < b.depTime).map((b) => b.date));
+    const today = todayISO();
+    const out = [h('div', { class: 'card hotel-sum' },
+      h('div', {}, h('b', { text: String(hotels.length) }), h('small', { text: hotels.length === 1 ? 'Unterkunft' : 'Unterkünfte' })),
+      h('div', {}, h('b', { text: String(total) }), h('small', { text: 'Nächte' })),
+      h('div', {}, h('b', { text: `${fmtDay(hotels[0].date, { day: 'numeric', month: 'short' })} – ${fmtDay(last, { day: 'numeric', month: 'short' })}` }), h('small', { text: 'Zeitraum' }))
+    )];
+    let prev = null;
+    for (const b of hotels) {
+      if (prev && prev.endDate) {
+        if (b.date > prev.endDate) {
+          const gap = [];
+          for (let d = prev.endDate; d < b.date; d = addDaysISO(d, 1)) if (!overnight.has(d)) gap.push(d);
+          if (gap.length) out.push(h('div', { class: 'gap-warn' }, `⚠️ ${nightsText(gap.length)} ohne Unterkunft: ${fmtDay(gap[0])}${gap.length > 1 ? ' – ' + fmtDay(addDaysISO(gap[gap.length - 1], 1)) : ''}`));
+        } else if (b.date < prev.endDate) {
+          out.push(h('div', { class: 'gap-warn overlap' }, `⚠️ Überschneidung: „${prev.name}“ und „${b.name}“`));
+        }
+      } else if (prev && !prev.endDate) {
+        out.push(h('div', { class: 'gap-warn' }, `ℹ️ Bei „${prev.name}“ fehlt das Check-out-Datum`));
+      }
+      const n = nightsOf(b);
+      const now = b.date <= today && today <= endDateOf(b);
+      out.push(h('div', { class: `card hotel-item${isPast(b) ? ' past' : ''}${now ? ' now' : ''}` },
+        h('div', { class: 'hotel-head' },
+          h('div', { class: 'hotel-nights' }, h('b', { text: n ? String(n) : '–' }), h('small', { text: n === 1 ? 'Nacht' : 'Nächte' })),
+          h('div', { class: 'hotel-title' },
+            h('b', { text: b.name }),
+            h('small', { text: [b.city, now ? '● jetzt' : ''].filter(Boolean).join(' · ') })),
+          h('button', { class: 'mini-btn', type: 'button', 'aria-label': 'Bearbeiten', onclick: () => openForm('hotel', b) }, '✎')
+        ),
+        h('div', { class: 'hotel-dates' },
+          h('div', {}, h('small', { text: 'Check-in' }), h('b', { text: fmtDay(b.date) }), h('span', { text: b.checkinTime ? 'ab ' + b.checkinTime : '' })),
+          h('span', { class: 'route-arrow', text: '→' }),
+          h('div', {}, h('small', { text: 'Check-out' }), h('b', { text: b.endDate ? fmtDay(b.endDate) : '?' }), h('span', { text: b.checkoutTime ? 'bis ' + b.checkoutTime : '' }))
+        ),
+        b.address ? h('div', { class: 'booking-sub', text: '📍 ' + b.address }) : null,
+        fileRow(b),
+        h('div', { class: 'booking-actions' },
+          linkBtn('🗺 Maps', mapsUrl(b.address || [b.name, b.city].filter(Boolean).join(', '))),
+          b.phone ? h('a', { class: 'btn small', href: 'tel:' + b.phone.replace(/[^\d+]/g, '') }, '📞 ' + b.phone) : null,
+          h('button', { class: 'btn small', type: 'button', onclick: () => showForDriver(b) }, '🚕 Fahrer')
+        )
+      ));
+      if (!prev || !prev.endDate || endDateOf(b) > endDateOf(prev)) prev = b;
+    }
+    box.replaceChildren(...out);
+  }
+
+  function renderPlanView() {
+    $('#plan-timeline').hidden = planView !== 'timeline';
+    $('#hotel-overview').hidden = planView !== 'hotels';
+    for (const b of $$('[data-plan-view]')) b.setAttribute('aria-selected', String(b.dataset.planView === planView));
+    if (planView === 'hotels') renderHotels();
+  }
+  for (const b of $$('[data-plan-view]')) {
+    b.addEventListener('click', () => { planView = b.dataset.planView; store.set('planView', planView); renderPlanView(); });
+  }
+  $('#cal-multi-btn').addEventListener('click', () => window.TC.calendar.openMulti());
+
+  async function attachFiles(id, files) {
+    const b = bookings.find((x) => x.id === id);
+    if (!b) return;
+    for (const f of files) (b.files = b.files || []).push(await window.TC.files.put(f));
+    save(); render();
+    toast(`${files.length === 1 ? 'Datei' : files.length + ' Dateien'} angehängt`);
+  }
+
+  // Schnittstelle für Import, Kalender und Datensicherung
   window.TC.parseBCBP = parseBCBP;
+  window.TC.plan = {
+    TYPES, AIRLINES, AIRPORTS, parseBCBP, openForm, attachFiles,
+    addFlights: (legs, files) => addScannedLegs(legs, files),
+    all: () => bookings, isPast, titleOf, iconOf, fmtDay, airportName
+  };
 
   render();
+  renderPlanView();
   setInterval(render, 10 * 60 * 1000);
 })();

@@ -88,13 +88,15 @@
   });
 
   // ---------- Datensicherung ----------
-  $('#backup-export').addEventListener('click', () => {
+  $('#backup-export').addEventListener('click', async () => {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k.startsWith('tc.')) data[k] = localStorage.getItem(k);
     }
-    const blob = new Blob([JSON.stringify({ app: 'thailand-companion', version: 1, data }, null, 1)], { type: 'application/json' });
+    let files = [];
+    try { files = await window.TC.files.exportAll(); } catch (e) { toast('Dateien konnten nicht gesichert werden'); }
+    const blob = new Blob([JSON.stringify({ app: 'thailand-companion', version: 2, data, files })], { type: 'application/json' });
     const a = h('a', { href: URL.createObjectURL(blob), download: `thailand-companion-${new Date().toISOString().slice(0, 10)}.json` });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -111,6 +113,7 @@
       if (!confirm('Sicherung wiederherstellen? Die aktuellen Daten werden ersetzt.')) return;
       Object.keys(localStorage).filter((k) => k.startsWith('tc.')).forEach((k) => localStorage.removeItem(k));
       for (const [k, v] of Object.entries(json.data)) if (k.startsWith('tc.')) localStorage.setItem(k, v);
+      if (json.files) await window.TC.files.importAll(json.files);
       location.reload();
     } catch (err) {
       toast('Keine gültige Sicherungsdatei');

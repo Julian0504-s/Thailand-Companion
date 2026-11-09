@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
   <header class="topbar">
@@ -201,16 +201,27 @@
 
     <!-- 5. Reiseplan / Buchungen -->
     <section id="tab-plan" class="tab" data-title="Reiseplan" hidden>
+      <div class="segmented money-switch" role="tablist" aria-label="Ansicht">
+        <button type="button" role="tab" data-plan-view="timeline">🗓 Zeitleiste</button>
+        <button type="button" role="tab" data-plan-view="hotels">🏨 Unterkünfte</button>
+      </div>
       <div class="add-grid">
         <button class="add-tile" type="button" data-add="flight"><span>✈️</span>Flug</button>
         <button class="add-tile" type="button" data-add="hotel"><span>🏨</span>Unterkunft</button>
         <button class="add-tile" type="button" data-add="transport"><span>🚌</span>Transport</button>
         <button class="add-tile" type="button" data-add="activity"><span>🎟️</span>Aktivität</button>
       </div>
-      <button class="btn primary block" type="button" id="scan-start">📷 Bordkarte scannen</button>
-      <div class="chips-scroll" id="plan-filter" role="tablist"></div>
-      <div id="plan-list"></div>
-      <button class="btn ghost block" type="button" id="plan-past-toggle" hidden></button>
+      <div class="actions-row">
+        <button class="btn primary" type="button" id="import-start-btn">📥 Importieren</button>
+        <button class="btn primary" type="button" id="scan-start">📷 Bordkarte</button>
+      </div>
+      <div id="plan-timeline" class="tab">
+        <div class="chips-scroll" id="plan-filter" role="tablist"></div>
+        <div id="plan-list"></div>
+        <button class="btn ghost block" type="button" id="plan-past-toggle" hidden></button>
+        <button class="btn block" type="button" id="cal-multi-btn">📅 Mehrere in Kalender exportieren</button>
+      </div>
+      <div id="hotel-overview" class="tab" hidden></div>
     </section>
 
     <!-- Links -->
@@ -228,7 +239,7 @@
       </form>
       <div class="card">
         <h2>Datensicherung</h2>
-        <p class="hint" style="margin-top:0">Alle Daten liegen nur auf diesem Handy. Sichere sie als Datei – z. B. bevor du den Browser-Speicher löschst oder das Handy wechselst.</p>
+        <p class="hint" style="margin-top:0">Alle Daten liegen nur auf diesem Handy. Sichere sie als Datei (inkl. angehängter PDFs) – z. B. bevor du den Browser-Speicher löschst oder das Handy wechselst.</p>
         <div class="actions-row" style="margin-top:12px">
           <button class="btn" type="button" id="backup-export">⬇ Sichern</button>
           <label class="btn" for="backup-import">⬆ Wiederherstellen</label>
@@ -296,6 +307,8 @@
     <form class="form" id="booking-form">
       <h2 id="booking-title">Buchung</h2>
       <div id="booking-fields" class="form"></div>
+      <div id="booking-files" class="booking-files"></div>
+      <input type="file" id="booking-file-input" accept="application/pdf,.pdf,image/*" multiple hidden>
       <div class="actions-row">
         <button class="btn ghost" type="button" id="booking-cancel">Abbrechen</button>
         <button class="btn primary" type="submit">Speichern</button>
@@ -317,6 +330,57 @@
     </div>
   </dialog>
 
+  <dialog id="import-dialog">
+    <div class="form">
+      <h2>📥 Buchung importieren</h2>
+      <div id="import-start" class="form">
+        <p class="hint" style="margin:0">Buchungsbestätigung (PDF), E-Ticket, Bordkarte oder Screenshot auswählen. Tipp: In Booking.com, Agoda, Gmail &amp; Co. geht es auch über <b>Teilen → Thailand Companion</b>.</p>
+        <label class="btn primary block" for="import-file">📄 Datei auswählen</label>
+        <input type="file" id="import-file" accept="application/pdf,.pdf,image/*,text/plain,.txt,.eml" multiple hidden>
+        <label>… oder Text der Bestätigung einfügen
+          <textarea id="import-text" rows="5" placeholder="Text aus der E-Mail kopieren und hier einfügen"></textarea>
+        </label>
+        <button class="btn block" type="button" id="import-analyse">Text analysieren</button>
+      </div>
+      <p class="hint" id="import-status" style="margin:0"></p>
+      <div id="import-result" class="form"></div>
+      <button class="btn ghost block" type="button" id="import-close">Schließen</button>
+    </div>
+  </dialog>
+
+  <dialog id="file-dialog" class="file-dialog">
+    <div class="file-bar">
+      <b id="file-name"></b>
+      <button class="btn small" type="button" id="file-share">↗ Öffnen / Teilen</button>
+      <button class="mini-btn" type="button" id="file-download" aria-label="Herunterladen">⬇</button>
+      <button class="mini-btn" type="button" id="file-close" aria-label="Schließen">✕</button>
+    </div>
+    <div id="file-view" class="file-view"></div>
+  </dialog>
+
+  <dialog id="cal-dialog">
+    <div class="form">
+      <h2>📅 In Kalender eintragen</h2>
+      <p style="margin:0"><b id="cal-title"></b><br><span class="hint" id="cal-when"></span></p>
+      <a class="btn primary block" id="cal-google" href="#" target="_blank" rel="noopener">Google Kalender</a>
+      <button class="btn block" type="button" id="cal-ics">Kalenderdatei (.ics) – andere Kalender-Apps</button>
+      <p class="hint" style="margin:0">Google Kalender öffnet den Termin zum Speichern. Die .ics-Datei öffnen z. B. Samsung-Kalender, Outlook oder Apple Kalender.</p>
+      <button class="btn ghost block" type="button" id="cal-close">Schließen</button>
+    </div>
+  </dialog>
+
+  <dialog id="cal-multi-dialog">
+    <div class="form">
+      <h2>📅 In Kalender exportieren</h2>
+      <p class="hint" style="margin:0">Auswählen, was in den Kalender soll. Es entsteht eine .ics-Datei.</p>
+      <button class="btn small ghost" type="button" id="cal-multi-all">Alle an/aus</button>
+      <div class="check-list" id="cal-multi-list"></div>
+      <button class="btn primary block" type="button" id="cal-multi-export">Exportieren</button>
+      <p class="hint" style="margin:0">Google Kalender am Handy kann .ics-Dateien nicht direkt öffnen: entweder einzeln über „📅 Kalender“ bei der Buchung eintragen oder die Datei am Computer unter calendar.google.com → Einstellungen → Importieren hochladen.</p>
+      <button class="btn ghost block" type="button" id="cal-multi-close">Schließen</button>
+    </div>
+  </dialog>
+
   <dialog id="show-dialog" class="show-dialog">
     <div class="show-body">
       <p class="show-label" id="show-label"></p>
@@ -328,10 +392,13 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/data.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
-  <script src="js/plan.js?v=4"></script>
-  <script src="js/links.js?v=4"></script>
-  <script src="js/cash.js?v=4"></script>
+  <script src="js/data.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
+  <script src="js/files.js?v=5"></script>
+  <script src="js/calendar.js?v=5"></script>
+  <script src="js/plan.js?v=5"></script>
+  <script src="js/importer.js?v=5"></script>
+  <script src="js/links.js?v=5"></script>
+  <script src="js/cash.js?v=5"></script>
 </body>
 </html>

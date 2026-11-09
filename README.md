@@ -14,7 +14,11 @@ Offline-fähige Progressive Web App für die Thailand-Reise – reines HTML, CSS
   - **Bordkarte scannen** per Kamera oder Screenshot (IATA-BCBP-Barcode, `BarcodeDetector`-API – Chrome auf Android)
   - Flugstatus-Link (Flightradar24), Buchungscodes zum Kopieren, Karten-Links, „Fahrer zeigen“-Vollbild mit Hoteladresse
   - „Als Nächstes“ auf der Startseite
-- **Links**: nützliche Seiten (TDAC, 12Go, Grab, Bahn, Fähren, Airlines, Flughäfen …), eigene Links, Datensicherung als JSON
+  - **Import** von Buchungsbestätigungen (PDF, Text, Bilder oder „Teilen → Thailand Companion“ über die Web Share Target API): Unterkünfte inkl. Check-in/-out-Zeiten, Adresse, Telefon, Buchungsnummer sowie Flüge aus E-Tickets werden per Mustererkennung vorausgefüllt; Bordkarten-PDFs über den Barcode
+  - **Dateien** (PDF/Bilder) pro Buchung, offline in IndexedDB gespeichert, mit eingebautem PDF-Viewer (pdf.js, `vendor/pdfjs`, Apache-2.0)
+  - **Übersicht Unterkünfte** mit Nächten und Warnung bei Lücken/Überschneidungen
+  - **Kalender-Export**: einzeln (Google Kalender oder .ics) oder mehrere als .ics
+- **Links**: nützliche Seiten (TDAC, 12Go, Grab, Bahn, Fähren, Airlines, Flughäfen …), eigene Links, Datensicherung als JSON (inkl. Dateien)
 - **Notfall**: Thai-Notrufnummern, Österreichische Botschaft Bangkok, Reiseversicherung
 
 Alle Daten bleiben lokal im Browser (`localStorage`).

@@ -172,6 +172,7 @@
       .formatToParts(d).reduce((o, x) => { o[x.type] = Number(x.value); return o; }, {});
     return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(d.getTime() / 60000) * 60000) / 60000;
   }
+  window.TC.zoneOffsetMin = zoneOffsetMin;
   function renderClocks() {
     const now = new Date();
     const th = zoneParts('Asia/Bangkok', now), at = zoneParts('Europe/Vienna', now);
